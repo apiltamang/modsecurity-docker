@@ -7,34 +7,38 @@ services:
       context: .
       dockerfile: v3-nginx/Dockerfile
     environment:
-      BACKEND: http://frontend:81
-      PORT: "80"
-      SSL_PORT: "443"
+      BACKEND: http://frontend  # https://httpbin.org
+      PORT: "8080"
+      SSL_PORT: "4443"
       # DNS_SERVER: "8.8.8.8"
       METRICS_ALLOW_FROM: all
     ports:
-    - "80:80"
-    - "443:443"
-    user: "10001"
+      - "8081:8080"
+      - "4444:4443"
     networks:
       - frontend
+    depends_on:
+      - frontend
+
 
   frontend:
     image: echo/nginx-app-server
     build: 
-      context: ../echo-fed-server
+      context: ./echo-fed-server
     ports:
-      - "81:81"
+      - "80"
+    depends_on:
+      - backend
     networks:
       - frontend
       - backend
 
   backend:
-    image: echo/app-resource-server
+    image: echo/spring-resource-server
     environment:
       - JASYPT_ENCRYPT_KEY
     build:
-      context: ../echo-webapp-resource
+      context: ./echo-webapp-resource
     networks:
       - backend
 
