@@ -7,7 +7,7 @@ services:
       context: .
       dockerfile: v3-nginx/Dockerfile
     environment:
-      BACKEND: http://frontend  # https://httpbin.org
+      BACKEND: http://app-frontend
       PORT: "8080"
       SSL_PORT: "4443"
       # DNS_SERVER: "8.8.8.8"
@@ -16,32 +16,46 @@ services:
       - "8081:8080"
       - "4444:4443"
     networks:
-      - frontend
+      - frontend # ensures this can only see 'app-frontend'
     depends_on:
-      - frontend
+      - app-frontend
 
-
-  frontend:
+  app-frontend:
     image: echo/nginx-app-server
     build: 
       context: ./echo-fed-server
     ports:
-      - "80"
+      - "80"      # only expose the container-port
     depends_on:
-      - backend
+      - app-backend
     networks:
-      - frontend
-      - backend
+      - frontend  # can see itself, as well as ...
+      - backend   # the 'app-backend' service
 
-  backend:
+  app-backend:
     image: echo/spring-resource-server
     environment:
       - JASYPT_ENCRYPT_KEY
     build:
       context: ./echo-webapp-resource
     networks:
-      - backend
+      - backend   # can see itself, and ...
+      - database  # the app-database service
+
+  app-database:
+    image: mysql:5.7.32
+    volumes:
+      - /etc/mysql-custom:/etc/mysql/conf.d
+      - /var/lib/mysql:/var/lib/mysql
+    ports:
+      - "3306"   # only expose container port.
+    networks:
+      - database
 
 networks:
   frontend:
   backend:
+  database:
+
+# example of command used to start mysql for the echo app
+# docker run --name apildb2 -v /var/lib/mysql:/var/lib/mysql -v /etc/mysql-custom:/etc/mysql/conf.d -p 3306:3306 mysql:5.7.32
