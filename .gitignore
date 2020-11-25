@@ -1,2 +1,5 @@
 echo-fed-server
 echo-webapp-resource
+
+*.iml
+.idea
