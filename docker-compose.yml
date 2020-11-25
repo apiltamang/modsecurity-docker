@@ -7,55 +7,63 @@ services:
       context: .
       dockerfile: v3-nginx/Dockerfile
     environment:
-      BACKEND: http://app-frontend
+      BACKEND: http://frontend
       PORT: "8080"
       SSL_PORT: "4443"
-      # DNS_SERVER: "8.8.8.8"
       METRICS_ALLOW_FROM: all
     ports:
       - "8081:8080"
       - "4444:4443"
     networks:
-      - frontend # ensures this can only see 'app-frontend'
+      - net-frontend # ensures this can only see 'app-frontend'
     depends_on:
-      - app-frontend
+      - frontend
 
-  app-frontend:
+  frontend:
     image: echo/nginx-app-server
     build: 
       context: ./echo-fed-server
     ports:
       - "80"      # only expose the container-port
     depends_on:
-      - app-backend
+      - backend
     networks:
-      - frontend  # can see itself, as well as ...
-      - backend   # the 'app-backend' service
+      - net-frontend  # can see itself, as well as ...
+      - net-backend   # the 'app-backend' service
 
-  app-backend:
+  backend:
     image: echo/spring-resource-server
     environment:
       - JASYPT_ENCRYPT_KEY
     build:
       context: ./echo-webapp-resource
+    ports:
+      - "8079:8079"
     networks:
-      - backend   # can see itself, and ...
-      - database  # the app-database service
+      - net-backend   # can see itself, and ...
+      - net-database  # the app-database service
+    depends_on:
+      - database
 
-  app-database:
+  database:
     image: mysql:5.7.32
     volumes:
       - /etc/mysql-custom:/etc/mysql/conf.d
       - /var/lib/mysql:/var/lib/mysql
     ports:
-      - "3306"   # only expose container port.
+      - "3306:3306"   # only expose container port.
     networks:
-      - database
+      - net-database
+
+# Only services (nginx-waf, frontend, backend, database) which are
+# registered in given network can access each other using the
+# target's service name.
+
+# e.g. 'backend' can access the db using hostname 'database' since
+# they both declare 'net-database' 
 
 networks:
-  frontend:
-  backend:
-  database:
+  net-frontend:
+  net-backend:
+  net-database:
 
-# example of command used to start mysql for the echo app
-# docker run --name apildb2 -v /var/lib/mysql:/var/lib/mysql -v /etc/mysql-custom:/etc/mysql/conf.d -p 3306:3306 mysql:5.7.32
