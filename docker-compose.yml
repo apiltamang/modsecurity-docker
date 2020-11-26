@@ -7,12 +7,12 @@ services:
       context: .
       dockerfile: v3-nginx/Dockerfile
     environment:
-      BACKEND: http://frontend
-      PORT: "8080"
+      BACKEND: http://frontend:81
+      PORT: "80"
       SSL_PORT: "4443"
       METRICS_ALLOW_FROM: all
     ports:
-      - "8081:8080"
+      - "80:80"
       - "4444:4443"
     networks:
       - net-frontend # ensures this can only see 'app-frontend'
@@ -23,8 +23,6 @@ services:
     image: echo/nginx-app-server
     build: 
       context: ./echo-fed-server
-    ports:
-      - "80"      # only expose the container-port
     depends_on:
       - backend
     networks:
@@ -37,8 +35,6 @@ services:
       - JASYPT_ENCRYPT_KEY
     build:
       context: ./echo-webapp-resource
-    ports:
-      - "8079:8079"
     networks:
       - net-backend   # can see itself, and ...
       - net-database  # the app-database service
